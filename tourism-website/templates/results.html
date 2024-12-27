@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+
+        #results-container {
+            display: flex; /* Use flexbox for layout */
+            border: 2px solid blue; /* Thick border */
+            border-radius: 10px; /* Rounded corners */
+            overflow: hidden; /* Prevent content overflow */
+            margin: 20px; /* Margin for spacing */
+            color:white;
+        }
+
+        #map {
+            height: 450px; /* Set height to 450px */
+            width: 450px; /* Set width to 450px */
+        }
+
+        .places-list {
+            flex: 1; /* Allow the list to grow */
+            padding: 20px; /* Padding inside the list container */
+            overflow-y: auto; /* Enable vertical scrolling if needed */
+            color:white;
+        }
+
+        ul {
+            list-style-type: none; /* Remove default list styling */
+            padding: 0; /* Remove padding */
+            color:white;
+        }
+
+        li {
+            background-color: rgba(255, 255, 255, 0.1); /* Light background for list items */
+            border: 1px solid blue; /* Light border */
+            border-radius: 8px; /* Rounded corners */
+            padding: 10px; /* Padding inside list items */
+            margin: 10px 0; /* Space between list items */
+            color:white;
+            transition: background-color 0.3s; /* Smooth background change */
+        }
+
+        li:hover {
+            background-color: rgba(255, 255, 255, 0.2); /* Change background on hover */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>&nbsp</h1> <!-- Updated search results heading -->
+    </header>
+    <main>
+        <div id="results-container">
+            <div class="places-list">
+                {% if places %}
+                    <h2>RESULTZ:</h2>
+                    <ul>
+                        {% for place in places %}
+                            <li>{{ place }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No places found.</p>
+                {% endif %}
+            </div>
+
+            {% if first_place %}
+                <div>
+                    <h2>MAPs: {{ first_place }}</h2>
+                    <div id="map"></div>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        function initMap() {
+            const firstPlace = "{{ first_place }}";
+
+            // Use a geocoding API to get the coordinates of the first place
+            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(firstPlace)}&format=json`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const lat = data[0].lat;
+                        const lon = data[0].lon;
+
+                        // Create a map centered at the location
+                        const map = L.map('map').setView([lat, lon], 13);
+
+                        // Add OpenStreetMap tile layer
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            maxZoom: 19,
+                        }).addTo(map);
+
+                        // Add a marker at the location
+                        L.marker([lat, lon]).addTo(map)
+                            .bindPopup(firstPlace)
+                            .openPopup();
+                    } else {
+                        console.error('Geocoding was not successful for the following reason: No results found');
+                        alert('No results found for the location.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during geocoding:', error);
+                    alert('An error occurred while fetching the location.');
+                });
+        }
+
+        // Call initMap function once the page is loaded
+        document.addEventListener("DOMContentLoaded", initMap);
+    </script>
+</body>
+</html>
